@@ -4,6 +4,14 @@ contract Showcase =
 
   type commitment_hash = int
 
+  record vote = {
+    commitment_hash : commitment_hash,
+    amount : int }
+
+  record vote_group = {
+    voter_addresses : list(address),
+    total_votes : int}
+
   record aepp = {
     image_binary : string,
     title : string,
@@ -14,26 +22,27 @@ contract Showcase =
     aepp : aepp,
     submission_height : int,
     vote_reward_pool : int,
-    voters : map(address, commitment_hash),
-    votes : map(string, int) }
+    voters : map(address, vote),
+    submitted_votes : map(string, vote_group) }
 
   record state = {
     pending : map(aepp_id, pending_aepp),
     approved : map(aepp_id, aepp),
     minimum_submission_deposit : int,
     approval_time_frame : int,
-    minimum_vote_deposit : int,
-    vote_burn_amount : int,
-    vote_reward_pool_amount : int }
+    vote_pool_percentage : int,
+    vote_to_upvote_power_percentage : int,
+    upvote_to_vote_power_percentage : int}
 
   function init() =
     { pending = {},
       approved = {},
-      minimum_submission_deposit = 10,
+      // initial minimum deposit will be 1 ae
+      minimum_submission_deposit = 1000000000000000000,
       approval_time_frame = 480,
-      minimum_vote_deposit = 10,
-      vote_burn_amount = 3,
-      vote_reward_pool_amount = 7 }
+      vote_pool_percentage = 70,
+      vote_to_upvote_power_percentage = 25,
+      upvote_to_vote_power_percentage = 70}
 
   public stateful function submit_aepp(image_binary : string,
     title : string, description : string, page_url : string) =
@@ -59,27 +68,67 @@ contract Showcase =
   public stateful function vote(aepp_id : int, commitment_hash : commitment_hash) =
     require(Map.member(aepp_id, state.pending), "aepp not up for voting")
     require(!Map.member(Call.caller, state.pending[aepp_id].voters), "Address already voted")
-    require(Call.value >= state.minimum_vote_deposit, "Vote deposit not high enough")
-
-    burn(state.vote_burn_amount)
 
     let updated_pending_aepp =
       state.pending[aepp_id]{
-        vote_reward_pool @ v = v + state.vote_reward_pool_amount,
-        voters[Call.caller] = commitment_hash }
+        vote_reward_pool @ v = v + Call.value,
+        voters[Call.caller] = {commitment_hash = commitment_hash, amount = Call.value} }
 
     put(state{ pending[aepp_id] = updated_pending_aepp })
 
   public stateful function submit_commitment(aepp_id : aepp_id, vote : string, salt : string) =
+    let approval_time_over : bool =
+      state.pending[aepp_id].submission_height + state.approval_time_frame >= Chain.block_height
+
+    let vote_submit_time_over : bool =
+      Chain.block_height < state.pending[aepp_id].submission_height + 2 * state.approval_time_frame
+
     require(Map.member(aepp_id, state.pending), "aepp not up for voting")
+    require(approval_time_over && !vote_submit_time_over, "aepp not up for commitment submission")
     require(Map.member(Call.caller, state.pending[aepp_id].voters), "Address not a voter for this aepp")
     require(vote == "yes" || vote == "no", "Invalid vote")
 
     let commitment_hash_check = String.sha3(String.concat(vote, salt))
-    require(commitment_hash_check == state.pending[aepp_id].voters[Call.caller], "Commitment hash mismatch")
+    require(commitment_hash_check == state.pending[aepp_id].voters[Call.caller].commitment_hash, "Commitment hash mismatch")
 
-    let updated_pending_aepp = state.pending[aepp_id]{votes[vote] @ v = v + 1 }
+    let updated_pending_aepp =
+      state.pending[aepp_id]{submitted_votes[vote] @ v = v + state.pending[aepp_id].voters[Call.caller].amount }
+
     put(state{ pending[aepp_id] = updated_pending_aepp })
+
+  public stateful function update_state() =
+    update_state'(Map.to_list(state.pending))
+
+  private stateful function update_state'(list) =
+    switch(list)
+      (aepp_id, pending_aepp) :: rest =>
+        require(pending_aepp.submission_height + state.approval_time_frame >=
+          Chain.block_height, "aepp still up for voting")
+
+        let new_pending = Map.delete(aepp_id, state.pending)
+        put(state{pending = new_pending})
+        //TODO: reward state updater
+
+        if(pending_aepp.votes["yes"].total_votes >= pending_aepp.votes["no"].total_votes)
+
+          put(state{approved[aepp_id] = pending_aepp.aepp })
+        else
+
+
+      [] =>
+        0
+
+  private function grant_vote_rewards(pending_aepp : pending_aepp, winner_group : string) =
+
+    switch (pending_aepp.submitted_votes[winner_group].voter_addresses)
+      voter :: rest =>
+        let reward_pool : int = percentage(pending_aepp.vote_reward_pool, state.vote_pool_percentage)
+        let voter_reward : int = (pending_aepp.voters[voter].amount * 100) / reward_pool
+        Chain.spend(voter, voter_reward)
+        //TODO: update upvoting power balance
+
+
+
 
   private function new_aepp(image_binary : string,
     title : string, description : string, page_url : string) : aepp =
@@ -94,11 +143,12 @@ contract Showcase =
       submission_height = Chain.block_height,
       vote_reward_pool = 0,
       voters = {},
-      votes = { ["yes"] = 0, ["no"] = 0 } }
+      submitted_votes =
+        { ["yes"] = {voter_addresses = [], total_votes = 0},
+          ["no"] = {voter_addresses = [], total_votes = 0} } }
 
-  private function burn(amount : int) =
-    let burn_address : address = #0
-    Chain.spend(burn_address, amount)
+  private function percentage(value : int, percentage : int) : int =
+    (value * percentage)/100
 
   private function validate_input(values : list((string, string))) =
     switch(values)
