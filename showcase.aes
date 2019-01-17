@@ -1,0 +1,113 @@
+contract Showcase =
+
+  type aepp_id = int
+
+  type commitment_hash = int
+
+  record aepp = {
+    image_binary : string,
+    title : string,
+    description : string,
+    page_url : string }
+
+  record pending_aepp = {
+    aepp : aepp,
+    submission_height : int,
+    vote_reward_pool : int,
+    voters : map(address, commitment_hash),
+    votes : map(string, int) }
+
+  record state = {
+    pending : map(aepp_id, pending_aepp),
+    approved : map(aepp_id, aepp),
+    minimum_submission_deposit : int,
+    approval_time_frame : int,
+    minimum_vote_deposit : int,
+    vote_burn_amount : int,
+    vote_reward_pool_amount : int }
+
+  function init() =
+    { pending = {},
+      approved = {},
+      minimum_submission_deposit = 10,
+      approval_time_frame = 480,
+      minimum_vote_deposit = 10,
+      vote_burn_amount = 3,
+      vote_reward_pool_amount = 7 }
+
+  public stateful function submit_aepp(image_binary : string,
+    title : string, description : string, page_url : string) =
+
+    let aepp_id : aepp_id = String.sha3(title)
+    let aepp_listed : bool = Map.member(aepp_id, state.pending) || Map.member(aepp_id, state.approved)
+
+    let input : list((string, string)) =
+      [ (image_binary, "Image binary"),
+        (title, "Title"),
+        (description, "Description"),
+        (page_url, "Page URL") ]
+
+    validate_input(input)
+
+    require(!aepp_listed, "aepp already submitted or approved")
+    require(Call.value >= state.minimum_submission_deposit, "Submission deposit not high enough")
+
+    let aepp = new_aepp(image_binary, title, description, page_url)
+    let pending_aepp = new_pending_aepp(aepp)
+    put(state{ pending[aepp_id] = pending_aepp })
+
+  public stateful function vote(aepp_id : int, commitment_hash : commitment_hash) =
+    require(Map.member(aepp_id, state.pending), "aepp not up for voting")
+    require(!Map.member(Call.caller, state.pending[aepp_id].voters), "Address already voted")
+    require(Call.value >= state.minimum_vote_deposit, "Vote deposit not high enough")
+
+    burn(state.vote_burn_amount)
+
+    let updated_pending_aepp =
+      state.pending[aepp_id]{
+        vote_reward_pool @ v = v + state.vote_reward_pool_amount,
+        voters[Call.caller] = commitment_hash }
+
+    put(state{ pending[aepp_id] = updated_pending_aepp })
+
+  public stateful function submit_commitment(aepp_id : aepp_id, vote : string, salt : string) =
+    require(Map.member(aepp_id, state.pending), "aepp not up for voting")
+    require(Map.member(Call.caller, state.pending[aepp_id].voters), "Address not a voter for this aepp")
+    require(vote == "yes" || vote == "no", "Invalid vote")
+
+    let commitment_hash_check = String.sha3(String.concat(vote, salt))
+    require(commitment_hash_check == state.pending[aepp_id].voters[Call.caller], "Commitment hash mismatch")
+
+    let updated_pending_aepp = state.pending[aepp_id]{votes[vote] @ v = v + 1 }
+    put(state{ pending[aepp_id] = updated_pending_aepp })
+
+  private function new_aepp(image_binary : string,
+    title : string, description : string, page_url : string) : aepp =
+
+    { image_binary = image_binary,
+      title = title,
+      description = description,
+      page_url = page_url }
+
+  private function new_pending_aepp(aepp : aepp) =
+    { aepp = aepp,
+      submission_height = Chain.block_height,
+      vote_reward_pool = 0,
+      voters = {},
+      votes = { ["yes"] = 0, ["no"] = 0 } }
+
+  private function burn(amount : int) =
+    let burn_address : address = #0
+    Chain.spend(burn_address, amount)
+
+  private function validate_input(values : list((string, string))) =
+    switch(values)
+      (str, message) :: rest =>
+        require(str != "", String.concat(message, " cannot be empty!"))
+        validate_input(rest)
+      [] =>
+        0
+
+  private function require(b : bool, err : string) =
+    if(!b)
+      abort(err)
