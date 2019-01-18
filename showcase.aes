@@ -124,7 +124,6 @@ contract Showcase =
 
         "yes"
       else
-        // burn deposit or split among winners ?
         "no"
 
     grant_vote_rewards(pending_aepp.submitted_votes[winning_group].voter_addresses,
