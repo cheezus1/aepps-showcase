@@ -1,14 +1,14 @@
 <template>
 </template>
 <script>
-import { AeMain } from '@aeternity/aepp-components'
+import { AeMain } from "@aeternity/aepp-components";
 
 export default {
-  name: 'app',
+  name: "app",
   components: {
     AeMain
   }
-}
+};
 </script>
 <style>
 </style>

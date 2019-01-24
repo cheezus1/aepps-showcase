@@ -5,17 +5,16 @@
   </div>
 </template>
 <script>
-
-import PendingSubmissions from './components/PendingSubmissions'
-import { AeButton } from '@aeternity/aepp-components'
+import PendingSubmissions from "./components/PendingSubmissions";
+import { AeButton } from "@aeternity/aepp-components";
 
 export default {
-  name: 'app',
+  name: "app",
   components: {
     AeButton,
     PendingSubmissions
   }
-}
+};
 </script>
 <style>
 </style>
