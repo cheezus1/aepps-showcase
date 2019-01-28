@@ -13,6 +13,9 @@ export default {
     AeButton,
     AeMain,
     PendingSubmissions
+  },
+  data () {
+    return { data: ContractState.get() }
   }
 };
 </script>
