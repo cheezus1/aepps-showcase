@@ -1,40 +1,37 @@
 <template>
-  <div id="main">
-  <ae-card fill="neutral">
-    <template slot="header">
-    <img id="img" height=200px width=200px src="../assets/logo.png">
-    </template>
-    <h2 class="txt">Title</h2>
-    <h3 class="txt">Description</h3>
-    <ae-toolbar fill="" align="right" slot="footer">
-      owner address
-    </ae-toolbar>
+  <ae-card>
+    <!-- <template slot="default"> -->
+    <img id="img" src="../assets/logo.png">
+    <ae-label>Title</ae-label>
+    <ae-text>DescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescription</ae-text>
+    <!-- </template> -->
   </ae-card>
-  </div>
 </template>
 <script>
-import { AeMain, AeCard } from "@aeternity/aepp-components";
+import { AeMain, AeCard, AeLabel, AeText } from "@aeternity/aepp-components";
+import ContractState from "../util/contract_state";
 
 export default {
   name: "app",
   components: {
     AeMain,
-    AeCard
+    AeCard,
+    AeLabel,
+    AeText
+  },
+  data() {
+    return {
+      pending: ContractState.getPending().then(ContractState.pendingToObjects)
+    }
   }
 };
 </script>
 <style>
-  #main{
-    max-width: 800px;
-    height: 40%;
+  img {
+    float: left
   }
-  .txt{
-    color: #ffffff;
-    display: block;
-  }
-  #img{
-    margin-top: 20px;
-    margin-left: auto;
-    margin-right: auto;
+
+  ae-label, ae-text {
+    display: block
   }
 </style>

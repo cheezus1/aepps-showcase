@@ -1,6 +1,8 @@
 <template>
   <ae-main id="main">
-    <pending-submissions></pending-submissions>
+    <div style="width: 50%">
+      <pending-submissions></pending-submissions>
+    </div>
   </ae-main>
 </template>
 <script>
@@ -15,7 +17,7 @@ export default {
     PendingSubmissions
   },
   data () {
-    return { data: ContractState.get() }
+    return {}
   }
 };
 </script>

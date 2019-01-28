@@ -13,9 +13,9 @@ contract Showcase =
     total_votes : int }
 
   record aepp = {
-    image_binary : string,
     title : string,
     description : string,
+    image_binary : string,
     page_url : string }
 
   record pending_aepp = {
@@ -51,16 +51,22 @@ contract Showcase =
       upvote_to_vote_power_percentage = 70,
       balances = {} }
 
-  public stateful function submit_aepp(image_binary : string,
-    title : string, description : string, page_url : string) =
+  public function get_pending() : map(aepp_id, pending_aepp) =
+  	Map.from_list(Map.to_list(state.pending))
+
+  public function get_approved() : map(aepp_id, aepp) =
+  	state.approved
+
+  public stateful function submit_aepp(title : string,
+  	description : string, image_binary : string, page_url : string) =
 
     let aepp_id : aepp_id = String.sha3(title)
     let aepp_listed : bool = Map.member(aepp_id, state.pending) || Map.member(aepp_id, state.approved)
 
     let input : list((string, string)) =
-      [ (image_binary, "Image binary"),
-        (title, "Title"),
+      [ (title, "Title"),
         (description, "Description"),
+        (image_binary, "Image binary"),
         (page_url, "Page URL") ]
 
     validate_input(input)
@@ -68,7 +74,7 @@ contract Showcase =
     require(!aepp_listed, "aepp already submitted or approved")
     require(Call.value >= state.minimum_submission_deposit, "Submission deposit not high enough")
 
-    let aepp = new_aepp(image_binary, title, description, page_url)
+    let aepp = new_aepp(title, description, image_binary, page_url)
     let pending_aepp = new_pending_aepp(aepp)
     put(state{ pending[aepp_id] = pending_aepp })
 
@@ -145,12 +151,12 @@ contract Showcase =
       [] =>
         0
 
-  private function new_aepp(image_binary : string,
-    title : string, description : string, page_url : string) : aepp =
+  private function new_aepp(title : string,
+    description : string, image_binary : string, page_url : string) : aepp =
 
-    { image_binary = image_binary,
-      title = title,
+    { title = title,
       description = description,
+      image_binary = image_binary,
       page_url = page_url }
 
   private function new_pending_aepp(aepp : aepp) =
