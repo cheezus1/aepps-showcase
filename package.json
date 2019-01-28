@@ -11,6 +11,7 @@
     "@aeternity/aepp-components": "git+https://github.com/aeternity/aepp-components.git#develop",
     "@aeternity/aepp-sdk": "^1.2.1",
     "axios": "^0.18.0",
+    "bootstrap-vue": "^2.0.0-rc.11",
     "vue": "^2.5.21"
   },
   "devDependencies": {
