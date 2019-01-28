@@ -1,20 +1,25 @@
 <template>
-  <div>
+  <ae-main id="main">
     <pending-submissions></pending-submissions>
-    <ae-button face="round">button content</ae-button>
-  </div>
+  </ae-main>
 </template>
 <script>
 import PendingSubmissions from "./components/PendingSubmissions";
-import { AeButton } from "@aeternity/aepp-components";
+import { AeButton, AeMain } from "@aeternity/aepp-components";
 
 export default {
   name: "app",
   components: {
     AeButton,
+    AeMain,
     PendingSubmissions
   }
 };
 </script>
 <style>
+  #main{
+    display: flex;
+    flex-direction: row;
+    width: 100%
+  }
 </style>
