@@ -1,6 +1,6 @@
 contract Showcase =
 
-  type aepp_id = int
+  type aepp_ipfs_hash = string
 
   type commitment_hash = int
 
@@ -12,155 +12,123 @@ contract Showcase =
     voter_addresses : list(address),
     total_votes : int }
 
-  record aepp = {
-    title : string,
-    description : string,
-    image_binary : string,
-    page_url : string }
-
-  record pending_aepp = {
-    aepp : aepp,
+  record pending_aepp_data = {
+    owner : address,
     deposit : int,
     submission_height : int,
     vote_reward_pool : int,
     voters : map(address, vote),
     submitted_votes : map(string, vote_group) }
 
-  record user_balance = {
-    voting_power : int,
-    upvoting_power : int }
-
   record state = {
-    pending : map(aepp_id, pending_aepp),
-    approved : map(aepp_id, aepp),
+    pending : map(aepp_ipfs_hash, pending_aepp_data),
+    approved : list(aepp_ipfs_hash),
     minimum_submission_deposit : int,
     approval_time_frame : int,
-    vote_pool_percentage : int,
-    vote_to_upvote_power_percentage : int,
-    upvote_to_vote_power_percentage : int,
-    balances : map(address, user_balance) }
+    vote_pool_percentage : int }
 
   function init() =
     { pending = {},
-      approved = {},
+      approved = [],
       // initial minimum deposit will be 1 ae
       minimum_submission_deposit = 1000000000000000000,
       approval_time_frame = 480,
-      vote_pool_percentage = 70,
-      vote_to_upvote_power_percentage = 25,
-      upvote_to_vote_power_percentage = 70,
-      balances = {} }
+      vote_pool_percentage = 99 }
 
-  public function get_pending() : map(aepp_id, pending_aepp) =
+  public function get_pending() : map(aepp_ipfs_hash, pending_aepp_data) =
   	Map.from_list(Map.to_list(state.pending))
 
-  public function get_approved() : map(aepp_id, aepp) =
+  public function get_approved() : list(aepp_ipfs_hash) =
   	state.approved
 
-  public stateful function submit_aepp(title : string,
-  	description : string, image_binary : string, page_url : string) =
-
-    let aepp_id : aepp_id = String.sha3(title)
-    let aepp_listed : bool = Map.member(aepp_id, state.pending) || Map.member(aepp_id, state.approved)
-
-    let input : list((string, string)) =
-      [ (title, "Title"),
-        (description, "Description"),
-        (image_binary, "Image binary"),
-        (page_url, "Page URL") ]
-
-    validate_input(input)
+  public stateful function submit_aepp(aepp_ipfs_hash : aepp_ipfs_hash) =
+    let aepp_listed : bool =
+      Map.member(aepp_ipfs_hash, state.pending) || !is_approved(aepp_ipfs_hash, state.approved)
 
     require(!aepp_listed, "aepp already submitted or approved")
     require(Call.value >= state.minimum_submission_deposit, "Submission deposit not high enough")
 
-    let aepp = new_aepp(title, description, image_binary, page_url)
-    let pending_aepp = new_pending_aepp(aepp)
-    put(state{ pending[aepp_id] = pending_aepp })
+    let pending_aepp_data : pending_aepp_data = new_pending_aepp_data()
+    put(state{ pending[aepp_ipfs_hash] = pending_aepp_data })
 
-  public stateful function vote(aepp_id : int, commitment_hash : commitment_hash) =
-    require(Map.member(aepp_id, state.pending), "aepp not up for voting")
-    require(!Map.member(Call.caller, state.pending[aepp_id].voters), "Address already voted")
+  public stateful function vote(aepp_ipfs_hash : aepp_ipfs_hash, commitment_hash : commitment_hash) =
+    require(Map.member(aepp_ipfs_hash, state.pending), "aepp not up for voting")
+    require(!Map.member(Call.caller, state.pending[aepp_ipfs_hash].voters), "Address already voted")
 
     let updated_pending_aepp =
-      state.pending[aepp_id]{
+      state.pending[aepp_ipfs_hash]{
         vote_reward_pool @ v = v + Call.value,
         voters[Call.caller] = { commitment_hash = commitment_hash, amount = Call.value } }
 
-    put(state{ pending[aepp_id] = updated_pending_aepp })
+    put(state{ pending[aepp_ipfs_hash] = updated_pending_aepp })
 
-  public stateful function submit_commitment(aepp_id : aepp_id, vote : string, salt : string) =
+  public stateful function submit_commitment(aepp_ipfs_hash : aepp_ipfs_hash, vote : string, salt : string) =
+    require(Map.member(aepp_ipfs_hash, state.pending), "aepp not up for voting")
+
     let approval_time_over : bool =
-      state.pending[aepp_id].submission_height + state.approval_time_frame >= Chain.block_height
+      state.pending[aepp_ipfs_hash].submission_height + state.approval_time_frame >= Chain.block_height
 
     let vote_submit_time_over : bool =
-      Chain.block_height < state.pending[aepp_id].submission_height + 2 * state.approval_time_frame
+      Chain.block_height < state.pending[aepp_ipfs_hash].submission_height + 2 * state.approval_time_frame
 
-    require(Map.member(aepp_id, state.pending), "aepp not up for voting")
     require(approval_time_over && !vote_submit_time_over, "aepp not up for commitment submission")
-    require(Map.member(Call.caller, state.pending[aepp_id].voters), "Address not a voter for this aepp")
+    require(Map.member(Call.caller, state.pending[aepp_ipfs_hash].voters), "Address not a voter for this aepp")
     require(vote == "yes" || vote == "no", "Invalid vote")
 
-    let commitment_hash_check = String.sha3(String.concat(vote, salt))
-    require(commitment_hash_check == state.pending[aepp_id].voters[Call.caller].commitment_hash, "Commitment hash mismatch")
+    let commitment_hash_check : int = String.sha3(String.concat(vote, salt))
+    require(commitment_hash_check == state.pending[aepp_ipfs_hash].voters[Call.caller].commitment_hash, "Commitment hash mismatch")
 
     let updated_pending_aepp =
-      state.pending[aepp_id]{submitted_votes[vote] @ v = v{total_votes @ tv = tv + state.pending[aepp_id].voters[Call.caller].amount} }
+      state.pending[aepp_ipfs_hash]{submitted_votes[vote] @ v = v{total_votes @ tv = tv + state.pending[aepp_ipfs_hash].voters[Call.caller].amount} }
 
-    put(state{ pending[aepp_id] = updated_pending_aepp })
+    put(state{ pending[aepp_ipfs_hash] = updated_pending_aepp })
 
-  public stateful function finalize_aepp_vote(aepp_id : int) =
-    let pending_aepp : pending_aepp = state.pending[aepp_id]
+  public stateful function finalize_aepp_vote(aepp_ipfs_hash : aepp_ipfs_hash) =
+    let pending_aepp_data : pending_aepp_data = state.pending[aepp_ipfs_hash]
 
-    require(pending_aepp.submission_height + state.approval_time_frame * 2 >=
+    require(pending_aepp_data.submission_height + state.approval_time_frame * 2 >=
       Chain.block_height, "aepp still up for voting")
 
-    let new_pending = Map.delete(aepp_id, state.pending)
-    put(state{pending = new_pending})
-
-    let total_reward_pool = pending_aepp.vote_reward_pool + pending_aepp.deposit
-    let reward_pool : int = percentage(total_reward_pool, state.vote_pool_percentage)
-    let upvoting_power_pool : int = percentage(total_reward_pool, state.vote_to_upvote_power_percentage)
-    let updater_reward : int = total_reward_pool - (reward_pool + upvoting_power_pool)
-    Chain.spend(Call.caller, updater_reward)
+    let new_pending_data : map(aepp_ipfs_hash, pending_aepp_data) = Map.delete(aepp_ipfs_hash, state.pending)
+    put(state{pending = new_pending_data})
 
     let winning_group : string =
-      if(pending_aepp.submitted_votes["yes"].total_votes >= pending_aepp.submitted_votes["no"].total_votes)
-        put(state{ approved[aepp_id] = pending_aepp.aepp })
+      if(pending_aepp_data.submitted_votes["yes"].total_votes >= pending_aepp_data.submitted_votes["no"].total_votes)
+        Chain.spend(pending_aepp_data.owner, pending_aepp_data.deposit)
+        put(state{ approved @ a = aepp_ipfs_hash :: a })
 
         "yes"
       else
         "no"
 
-    grant_vote_rewards(pending_aepp.submitted_votes[winning_group].voter_addresses,
-      pending_aepp.voters, reward_pool, upvoting_power_pool)
+    let total_reward_pool : int =
+      switch(winning_group)
+        "yes" =>
+          pending_aepp_data.vote_reward_pool
+        "no"  =>
+          pending_aepp_data.vote_reward_pool + pending_aepp_data.deposit
+
+    let reward_pool : int = percentage(total_reward_pool, state.vote_pool_percentage)
+    let updater_reward : int = total_reward_pool - reward_pool
+    Chain.spend(Call.caller, updater_reward)
+
+    grant_vote_rewards(pending_aepp_data.submitted_votes[winning_group].voter_addresses,
+      pending_aepp_data.voters, reward_pool)
 
   private stateful function grant_vote_rewards(voter_addresses : list(address),
-    voters : map(address, vote), reward_pool : int, upvoting_power_pool : int) =
+    voters : map(address, vote), reward_pool : int) =
 
     switch (voter_addresses)
       voter_address :: rest =>
         let voter_reward : int = (voters[voter_address].amount * 100) / reward_pool
         Chain.spend(voter_address, voter_reward)
 
-        let upvoting_power_reward : int = (voters[voter_address].amount * 100) / upvoting_power_pool
-        let new_balances = state.balances{[voter_address] @ b = b{upvoting_power @ u = u + upvoting_power_reward}}
-        put(state{balances = new_balances})
-
-        grant_vote_rewards(rest, voters, reward_pool, upvoting_power_pool)
+        grant_vote_rewards(rest, voters, reward_pool)
       [] =>
         0
 
-  private function new_aepp(title : string,
-    description : string, image_binary : string, page_url : string) : aepp =
-
-    { title = title,
-      description = description,
-      image_binary = image_binary,
-      page_url = page_url }
-
-  private function new_pending_aepp(aepp : aepp) =
-    { aepp = aepp,
+  private function new_pending_aepp_data() =
+    { owner = Call.caller,
       deposit = Call.value,
       submission_height = Chain.block_height,
       vote_reward_pool = 0,
@@ -172,13 +140,17 @@ contract Showcase =
   private function percentage(value : int, percentage : int) : int =
     (value * percentage) / 100
 
-  private function validate_input(values : list((string, string))) =
-    switch(values)
-      (str, message) :: rest =>
-        require(str != "", String.concat(message, " cannot be empty!"))
-        validate_input(rest)
+  private function is_approved(aepp_ipfs_hash : aepp_ipfs_hash,
+    approved_list : list(aepp_ipfs_hash)) : bool =
+
+    switch(approved_list)
+      hash :: rest =>
+        if(aepp_ipfs_hash == hash)
+          true
+        else
+          is_approved(aepp_ipfs_hash, rest)
       [] =>
-        0
+        false
 
   private function require(b : bool, err : string) =
     if(!b)

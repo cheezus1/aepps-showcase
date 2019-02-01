@@ -1,8 +1,14 @@
 <template>
   <ae-main id="main">
-    <div style="width: 50%">
-      <pending-submissions></pending-submissions>
-    </div>
+    <b-container fluid >
+      <b-row>
+        <b-col cols="6" class="left-col">
+          <pending-submissions></pending-submissions>
+        </b-col>
+        <b-col cols="6" class="right-col">
+          <pending-submissions></pending-submissions></b-col>
+      </b-row>
+    </b-container>
   </ae-main>
 </template>
 <script>
@@ -22,9 +28,26 @@ export default {
 };
 </script>
 <style>
+  body {
+    overflow: hidden;
+  }
+
   #main{
     display: flex;
     flex-direction: row;
     width: 100%
+  }
+
+  .left-col {
+    /* background-color: #e0eaf9; */
+    height: 100vh;
+    overflow:auto;
+    padding: 10px;
+  }
+
+  .right-col {
+    /* background-color: #e0eaf9; */
+    height: 100vh;
+    overflow:auto;
   }
 </style>
