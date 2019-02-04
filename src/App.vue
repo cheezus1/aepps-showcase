@@ -1,53 +1,56 @@
 <template>
-  <ae-main id="main">
-    <b-container fluid >
-      <b-row>
-        <b-col cols="6" class="left-col">
-          <pending-submissions></pending-submissions>
-        </b-col>
-        <b-col cols="6" class="right-col">
-          <pending-submissions></pending-submissions></b-col>
-      </b-row>
-    </b-container>
-  </ae-main>
+  <div id="app">
+    <nav class="app-nav">
+      <div class="inner">
+        <RouterLink
+          class="logo"
+          to="/"
+        >
+          <img src="./assets/header-logo.svg">
+          <span class="app-name">
+            showcase
+          </span>
+        </RouterLink>
+        <div class="links">
+          <RouterLink
+            class="link"
+            to="/"
+          >
+            Approved
+          </RouterLink>
+          <RouterLink
+            class="link"
+            to="/pending"
+          >
+            Pending
+          </RouterLink>
+          <RouterLink
+            class="link"
+            to="/governance"
+          >
+            Governance
+          </RouterLink>
+        </div>
+        <div />
+      </div>
+    </nav>
+    <main>
+      <RouterView />
+    </main>
+  </div>
 </template>
+
 <script>
-import PendingSubmissions from "./components/PendingSubmissions";
-import { AeButton, AeMain } from "@aeternity/aepp-components";
+
+import { AeButton } from "@aeternity/aepp-components";
 
 export default {
-  name: "app",
-  components: {
-    AeButton,
-    AeMain,
-    PendingSubmissions
-  },
+  name: 'App',
+  components: {AeButton},
   data () {
-    return {}
+  return {
+    }
   }
-};
+}
 </script>
-<style>
-  body {
-    overflow: hidden;
-  }
-
-  #main{
-    display: flex;
-    flex-direction: row;
-    width: 100%
-  }
-
-  .left-col {
-    /* background-color: #e0eaf9; */
-    height: 100vh;
-    overflow:auto;
-    padding: 10px;
-  }
-
-  .right-col {
-    /* background-color: #e0eaf9; */
-    height: 100vh;
-    overflow:auto;
-  }
-</style>
+<style src='./app.scss' lang='scss' />

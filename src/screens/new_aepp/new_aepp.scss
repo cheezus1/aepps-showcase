@@ -1,0 +1,22 @@
+@import '../../style/mixins';
+
+.fields {
+  color: #f99d4e;
+  padding-top: 100px;
+  @include content-max-width;
+  display: block;
+}
+
+.field{
+  margin-top: 20px;
+  box-shadow: 0 0 10px 0 rgba(0,0,0,0.1);
+  padding-left: 10px;
+  background-color: #F7FAFC;
+}
+
+h1 {
+  text-align: center;
+  @include font-size(xxl);
+  font-weight:500;
+  margin:0;
+}

@@ -1,0 +1,115 @@
+@import 'style/mixins';
+
+html, body {
+  margin:0;
+  padding:0;
+  background-color: $smoke;
+  font-size: 18px;
+}
+#app {
+  font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: $white;
+  font-size: $base-font-size;
+  position:relative;
+  z-index:1;
+}
+#app:before {
+  position:absolute;
+  top:0;
+  left:0;
+  z-index:-1;
+  content:"";
+  display:block;
+  width:100%;
+  height:80px;
+  background-image: linear-gradient(-134deg, #f99d4e 0%, #fab74e 100%);
+
+}
+
+.number ,
+.block-hash,
+.block-number,
+.account-address {
+  font-family: 'Roboto Mono', monospace;
+  font-weight:500;
+}
+a {
+  color:inherit;
+  text-decoration:none;
+}
+.app-nav + main > .screen > :first-child {
+  padding-top:100px;
+}
+.app-nav + main > .screen > .block {
+  padding-top:80px;
+}
+.app-nav {
+  padding:30px 0px;
+  position:absolute;
+  top:0;
+  width:100%;
+  color:$white;
+}
+.app-nav >.inner >:first-child ,
+.app-nav >.inner >:last-child {
+  @include tablet-and-desktop {
+    width:280px;
+  }
+}
+.app-nav >.inner >:last-child {
+  text-align:right;
+}
+.app-nav .inner {
+  margin:0 auto;
+  width:calc(100% - #{2 * $content-margin});
+  display:flex;
+  justify-content:space-between;
+}
+.app-nav .link {
+  @include font-size(m);
+  position:relative;
+  display:inline-block;
+  color:inherit;
+  text-decoration:none;
+  margin:0 10px;
+}
+.app-nav .logo {
+  display:flex;
+}
+.app-nav .logo img + *{
+  margin-top:-12px;
+  margin-left:5px;
+}
+.app-nav a.link {
+  opacity:0.6;
+}
+.app-nav a.router-link-exact-active {
+  opacity:1.0;
+}
+.app-nav a.router-link-exact-active.link:after {
+  content: "";
+  display:block;
+  position:absolute;
+  width:calc(100% - 20px);
+  left:10px;
+  border-top:3px solid #F7296E;
+  bottom:-8px;
+}
+.app-nav .inner {
+  @include only-phone {
+    .links + .mobile-nav,
+    .mobile-nav {
+      flex: 1;
+      align-items: center;
+    }
+  }
+}
+.app-nav + main > .screen > :first-child {
+  padding-top:100px;
+}
+
+.app-nav + main > .screen > .block {
+  padding-top:80px;
+}

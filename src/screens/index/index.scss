@@ -1,0 +1,31 @@
+@import '../../style/mixins';
+
+.index-screen {
+  header {
+    background-image: linear-gradient(-134deg, #f99d4e 0%, #fab74e 100%);
+    color: $white;
+    padding-bottom:200px;
+  }
+  header h1 {
+    @include font-size(xxl);
+    font-weight:500;
+    margin:0;
+  }
+  header .grid {
+    display: flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    padding-top:50px;
+    @include content-max-width;
+  }
+
+  header .grid > * > :last-child {
+    margin-bottom:0;
+  }
+  header .grid .submit {
+    padding-bottom: 30px;
+    justify-content:flex-end;
+    width: 30%;
+    opacity: 0.95;
+  }
+}
