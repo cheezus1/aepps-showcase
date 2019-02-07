@@ -17,11 +17,11 @@ const pendingType =
 const approvedType = "map(int, (string, string, string, string))";
 const contractAddress = "ct_2GuYPHhL6RxUq3H3xfB6bZvf7xo1HbshGcXHBR6kcByjGcw4wP";
 
-var ipfs = ipfsClient({ host: 'localhost', port: 5001, protocol: 'http' });
-ipfs.cat('QmU6myacaAqUMm2tdHf9zSkfm5Bf8bwzREyNZk7J1wv84f', { length: 10 }, function(err, file) {
-  console.log(file);
-})
+const ipfs = ipfsClient({ host: 'localhost', protocol: 'http' });
 
+const pushToIpfs = (object) => {
+  ipfs.add(Buffer.from(JSON.stringify(object)))
+}
 
 const getPending = async () => {
     let client = await EpochChain.compose(EpochContract)({
@@ -57,5 +57,5 @@ const pendingToObjects = (pending) => {
 // IPFS
 
 export default {
-  getPending, pendingToObjects
+  getPending, pendingToObjects, pushToIpfs
 }

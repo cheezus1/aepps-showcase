@@ -10,7 +10,7 @@
             <RouterLink
               to="/new_aepp"
             >
-              <ae-button extend="true" face="round" fill="primary">Submit an æpp</ae-button>
+              <ae-button face="round" fill="primary">Submit an æpp</ae-button>
             </RouterLink>
           </div>
         </div>

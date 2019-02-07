@@ -1,16 +1,16 @@
 @import '../../style/mixins';
 
 .fields {
-  color: #f99d4e;
+  color: #311b58;
   padding-top: 100px;
   @include content-max-width;
   display: block;
 }
 
-.field{
+.field {
   margin-top: 20px;
   box-shadow: 0 0 10px 0 rgba(0,0,0,0.1);
-  padding-left: 10px;
+  padding-left: 15px;
   background-color: #F7FAFC;
 }
 
@@ -19,4 +19,19 @@ h1 {
   @include font-size(xxl);
   font-weight:500;
   margin:0;
+}
+
+.ae-label {
+  text-align: center;
+}
+
+.submit-button {
+  margin-top: 20px !important;
+  margin: 0 auto;
+  display: block !important;
+  background-color: #311b58 !important;
+}
+
+.btn {
+  display: none;
 }
