@@ -14,14 +14,26 @@ const pendingType =
       "map(string, (list(address), int))" +
     ")" +
   ")";
-const approvedType = "map(int, (string, string, string, string))";
-const contractAddress = "ct_2GuYPHhL6RxUq3H3xfB6bZvf7xo1HbshGcXHBR6kcByjGcw4wP";
+const approvedType = "list(string)"
+const contractAddress = "ct_27g9YvFzeGTWGo2SeAJPqEx7eReqefz9ZQjYtfseYHejVHxNZD";
 
 const ipfs = ipfsClient({ host: 'localhost', protocol: 'http' });
 
 const pushToIpfs = (object) => {
   ipfs.add(Buffer.from(JSON.stringify(object)))
 }
+
+const getApproved = async () => {
+    let client = await EpochChain.compose(EpochContract)({
+        url: `https://sdk-testnet.aepps.com`,
+        internalUrl: `https://sdk-testnet.aepps.com`,
+    }).catch(console.error);
+
+    const approved = await client.contractEpochCall(contractAddress, 'sophia-address', 'get_approved', '()').catch(console.error);
+    const decodedApproved = await client.contractEpochDecodeData(approvedType, approved.out).catch(console.error);
+
+    return decodedApproved;
+  }
 
 const getPending = async () => {
     let client = await EpochChain.compose(EpochContract)({
@@ -34,6 +46,12 @@ const getPending = async () => {
 
     return decodedPending;
   }
+
+const getFromIpfs = (hash) => {
+  ipfs.get(hash, function (err, file) {
+    console.log(file)
+  })
+}
 
 const pendingToObjects = (pending) => {
     let pendingObjects = [];
@@ -57,5 +75,5 @@ const pendingToObjects = (pending) => {
 // IPFS
 
 export default {
-  getPending, pendingToObjects, pushToIpfs
+  getPending, pendingToObjects, pushToIpfs, getApproved, getFromIpfs
 }
