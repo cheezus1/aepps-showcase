@@ -43,7 +43,7 @@ contract Showcase =
 
   public stateful function submit_aepp(aepp_ipfs_hash : aepp_ipfs_hash) =
     let aepp_listed : bool =
-      Map.member(aepp_ipfs_hash, state.pending) || !is_approved(aepp_ipfs_hash, state.approved)
+      Map.member(aepp_ipfs_hash, state.pending) || is_approved(aepp_ipfs_hash, state.approved)
 
     require(!aepp_listed, "aepp already submitted or approved")
     require(Call.value >= state.minimum_submission_deposit, "Submission deposit not high enough")
@@ -52,6 +52,7 @@ contract Showcase =
     put(state{ pending[aepp_ipfs_hash] = pending_aepp_data })
 
   public stateful function vote(aepp_ipfs_hash : aepp_ipfs_hash, commitment_hash : commitment_hash) =
+    require(Call.caller != state.pending[aepp_ipfs_hash].owner, "Owner can't vote for himself")
     require(Map.member(aepp_ipfs_hash, state.pending), "aepp not up for voting")
     require(!Map.member(Call.caller, state.pending[aepp_ipfs_hash].voters), "Address already voted")
 

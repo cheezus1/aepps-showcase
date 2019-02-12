@@ -1,14 +1,11 @@
 <template>
   <div>
     <header>
-      <div class="grid">
-      </div>
+      <div class="grid"></div>
     </header>
   </div>
 </template>
 
 <script>
-
-export default {
-}
+export default {};
 </script>
