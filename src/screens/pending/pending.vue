@@ -113,7 +113,7 @@ export default {
       );
     },
     submitVote: function() {
-      console.log(localStorage.getItem(this.voteSubmissionData.aeppIpfsHash));
+      // console.log(localStorage.getItem(this.voteSubmissionData.aeppIpfsHash));
       // call contract
     }
   }

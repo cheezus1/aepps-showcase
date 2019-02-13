@@ -1,5 +1,6 @@
 <template>
   <div class="fields">
+    <notifications group="notify" position="bottom center" />
     <h1>Submit an æpp</h1>
     <ae-input label="Title" class="field" v-model="title"></ae-input>
     <ae-input
@@ -44,7 +45,7 @@
 <script>
 import { AeInput, AeLabel, AeButton } from "@aeternity/aepp-components";
 import PictureInput from "vue-picture-input";
-import ContractState from "../../util/contract_state";
+import axios from "axios";
 
 export default {
   data() {
@@ -59,7 +60,6 @@ export default {
   methods: {
     onChange(image) {
       if (image) {
-        console.log("Image loaded.");
         this.image = image;
       } else {
         console.log("FileReader API not supported");
@@ -73,7 +73,20 @@ export default {
         page: this.page,
         image: this.image
       };
-      ContractState.pushToIpfs(aepp);
+      let that = this;
+      axios.post('http://localhost:8000/upload', JSON.stringify(aepp)).then(function () {
+        that.$notify({
+          group: 'notify',
+          text: 'æpp successfully uploaded!'
+        });
+      })
+      .catch(function (error) {
+        that.$notify({
+          group: 'notify',
+          text: 'failed to upload æpp: ' + error
+        });
+      });
+
     }
   },
   components: {

@@ -87,7 +87,7 @@ export default {
   },
   methods: {
     expand: function(event) {
-      console.log(event);
+      // console.log(event);
     }
   }
 };

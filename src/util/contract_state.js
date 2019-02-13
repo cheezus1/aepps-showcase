@@ -34,14 +34,14 @@ const getApproved = async () => {
   let client = await EpochChain.compose(EpochContract)({
     url: `https://sdk-testnet.aepps.com`,
     internalUrl: `https://sdk-testnet.aepps.com`
-  }).catch(console.error);
+  }).catch( );
 
   const approved = await client
     .contractEpochCall(contractAddress, "sophia-address", "get_approved", "()")
-    .catch(console.error);
+    .catch( );
   const decodedApproved = await client
     .contractEpochDecodeData(approvedType, approved.out)
-    .catch(console.error);
+    .catch( );
 
   return decodedApproved;
 };
@@ -50,27 +50,27 @@ const getPending = async () => {
   let client = await EpochChain.compose(EpochContract)({
     url: `https://sdk-testnet.aepps.com`,
     internalUrl: `https://sdk-testnet.aepps.com`
-  }).catch(console.error);
+  }).catch( );
 
   const pending = await client
     .contractEpochCall(contractAddress, "sophia-address", "get_pending", "()")
-    .catch(console.error);
+    .catch( );
   const decodedPending = await client
     .contractEpochDecodeData(pendingType, pending.out)
-    .catch(console.error);
+    .catch( );
 
   return decodedPending;
 };
 
 const getFromIpfs = hash => {
   ipfs.get(hash, function(err, file) {
-    console.log(file);
+    // console.log(file);
   });
 };
 
 const pendingToObjects = pending => {
   // TODO: use ipfs get
-  console.log(pending);
+  // console.log(pending);
 
   return PendingAepps.pendingAepps();
 };
