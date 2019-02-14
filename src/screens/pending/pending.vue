@@ -72,7 +72,7 @@ import {
   AeAppIcon
 } from "@aeternity/aepp-components";
 import { sha3_256 } from "js-sha3";
-import PendingAepps from "../../util/pending_aepps";
+import axios from "axios";
 const crypto = require("crypto");
 
 export default {
@@ -86,7 +86,7 @@ export default {
   },
   data() {
     return {
-      pendingAepps: PendingAepps.pendingAepps(),
+      pendingAepps: [],
       voteModalMessage: "",
       voteModalValue: { symbol: "AE", amount: undefined },
       voteModalVisible: false,
@@ -116,6 +116,20 @@ export default {
       // console.log(localStorage.getItem(this.voteSubmissionData.aeppIpfsHash));
       // call contract
     }
+  },
+  created: function() {
+    axios
+      .get("http://localhost:8000/pending-aepps")
+      .then(function(pendingAepps) {
+        this.pendingAepps = pendingAepps
+        console.log(pendingAepps);
+      })
+      .catch(function(error) {
+        that.$notify({
+          group: "notify",
+          text: "failed to load pending` æpps: " + error
+        });
+      });
   }
 };
 </script>

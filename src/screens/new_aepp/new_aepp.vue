@@ -4,10 +4,16 @@
     <h1>Submit an æpp</h1>
     <ae-input label="Title" class="field" v-model="title"></ae-input>
     <ae-input
-      label="Description"
+      label="Short description"
       class="field"
-      v-model="description"
+      v-model="shortDescription"
     ></ae-input>
+    <ae-textarea
+      label="Full description"
+      :monospace="false"
+      v-model="fullDescription"
+      placeholder="Full description"
+    ></ae-textarea>
     <ae-input
       label="Contract address"
       placeholder="ct_"
@@ -37,13 +43,14 @@
       face="round"
       class="submit-button"
       v-on:click="submit"
+      :disabled="submitButtonDisabled"
       >submit</ae-button
     >
   </div>
 </template>
 
 <script>
-import { AeInput, AeLabel, AeButton } from "@aeternity/aepp-components";
+import { AeInput, AeTextarea, AeLabel, AeButton } from "@aeternity/aepp-components";
 import PictureInput from "vue-picture-input";
 import axios from "axios";
 
@@ -51,10 +58,12 @@ export default {
   data() {
     return {
       title: "",
-      description: "",
+      shortDescription: "",
+      fullDescription: "",
       address: "",
       page: "",
-      image: null
+      image: null,
+      submitButtonDisabled: false
     };
   },
   methods: {
@@ -66,31 +75,46 @@ export default {
       }
     },
     submit() {
+      this.submitButtonDisabled = true;
       let aepp = {
         title: this.title,
-        description: this.description,
+        shortDescription: this.shortDescription,
+        fullDescription: this.fullDescription,
         address: this.address,
         page: this.page,
         image: this.image
       };
       let that = this;
-      axios.post('http://localhost:8000/upload', JSON.stringify(aepp)).then(function () {
-        that.$notify({
-          group: 'notify',
-          text: 'æpp successfully uploaded!'
+      axios
+        .post("http://localhost:8000/upload-aepp-to-ipfs", JSON.stringify(aepp))
+        .then(function(hash) {
+          axios
+            .post("http://localhost:8000/submit-ipfs-hash-to-contract", hash)
+            .then(function() {
+              that.$notify({
+                group: "notify",
+                text: "æpp successfully uploaded!"
+              });
+              window.location = "/#/pending";
+            })
+            .catch(function(error) {
+              that.$notify({
+                group: "notify",
+                text: "failed to upload æpp: " + error
+              });
+            });
+        })
+        .catch(function(error) {
+          that.$notify({
+            group: "notify",
+            text: "failed to upload æpp: " + error
+          });
         });
-      })
-      .catch(function (error) {
-        that.$notify({
-          group: 'notify',
-          text: 'failed to upload æpp: ' + error
-        });
-      });
-
     }
   },
   components: {
     AeInput,
+    AeTextarea,
     AeLabel,
     AeButton,
     PictureInput

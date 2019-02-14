@@ -8,10 +8,14 @@
 }
 
 .field {
-  margin-top: 20px;
+  background: #FFFFFF;
+  margin-top: 20px !important;
   box-shadow: 0 0 10px 0 rgba(0,0,0,0.1);
-  padding-left: 15px;
-  background-color: #F7FAFC;
+  padding-left: 15px !important;
+}
+
+.field div, .field input {
+  background: #FFFFFF !important;
 }
 
 h1 {
@@ -23,6 +27,11 @@ h1 {
 
 .ae-label {
   text-align: center;
+}
+
+.ae-textarea {
+  margin: 20px 0 0 0 !important;
+  // background: #F7FAFC;
 }
 
 .submit-button {

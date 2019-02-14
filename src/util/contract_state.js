@@ -2,7 +2,6 @@
 const { EpochChain, EpochContract } = require("@aeternity/aepp-sdk");
 const ipfsClient = require("ipfs-http-client");
 const Buffer = require("buffer").Buffer;
-import PendingAepps from "./pending_aepps";
 
 const pendingType = `map(string,
     (
@@ -15,7 +14,7 @@ const pendingType = `map(string,
     )
   )`;
 const approvedType = "list(string)";
-const contractAddress = "ct_DvkFC5aGvNcNX2RqGD6d6E2mceePnDqshW3cLNe2SBZtfyB21";
+const contractAddress = "ct_2H4ZV4ccwAVBSSiDpYpMuYTRYW8ADimwPUNCHXG9Um6ThU1yy3";
 const ipfs = ipfsClient({ host: "localhost", protocol: "http" });
 
 /*
@@ -34,14 +33,14 @@ const getApproved = async () => {
   let client = await EpochChain.compose(EpochContract)({
     url: `https://sdk-testnet.aepps.com`,
     internalUrl: `https://sdk-testnet.aepps.com`
-  }).catch( );
+  }).catch();
 
   const approved = await client
     .contractEpochCall(contractAddress, "sophia-address", "get_approved", "()")
-    .catch( );
+    .catch();
   const decodedApproved = await client
     .contractEpochDecodeData(approvedType, approved.out)
-    .catch( );
+    .catch();
 
   return decodedApproved;
 };
@@ -50,14 +49,14 @@ const getPending = async () => {
   let client = await EpochChain.compose(EpochContract)({
     url: `https://sdk-testnet.aepps.com`,
     internalUrl: `https://sdk-testnet.aepps.com`
-  }).catch( );
+  }).catch();
 
   const pending = await client
     .contractEpochCall(contractAddress, "sophia-address", "get_pending", "()")
-    .catch( );
+    .catch();
   const decodedPending = await client
     .contractEpochDecodeData(pendingType, pending.out)
-    .catch( );
+    .catch();
 
   return decodedPending;
 };
