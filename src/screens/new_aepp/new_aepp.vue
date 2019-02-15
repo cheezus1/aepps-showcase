@@ -15,10 +15,10 @@
       placeholder="Full description"
     ></ae-textarea>
     <ae-input
-      label="Contract address"
+      label="Contract contractAddress"
       placeholder="ct_"
       class="field"
-      v-model="address"
+      v-model="contractAddress"
       aeddress
     ></ae-input>
     <ae-input label="Web page URL" class="field" v-model="page"></ae-input>
@@ -50,7 +50,12 @@
 </template>
 
 <script>
-import { AeInput, AeTextarea, AeLabel, AeButton } from "@aeternity/aepp-components";
+import {
+  AeInput,
+  AeTextarea,
+  AeLabel,
+  AeButton
+} from "@aeternity/aepp-components";
 import PictureInput from "vue-picture-input";
 import axios from "axios";
 
@@ -60,7 +65,7 @@ export default {
       title: "",
       shortDescription: "",
       fullDescription: "",
-      address: "",
+      contractAddress: "",
       page: "",
       image: null,
       submitButtonDisabled: false
@@ -75,18 +80,20 @@ export default {
       }
     },
     submit() {
-      this.submitButtonDisabled = true;
+      // this.submitButtonDisabled = true;
       let aepp = {
         title: this.title,
         shortDescription: this.shortDescription,
         fullDescription: this.fullDescription,
-        address: this.address,
+        contractAddress: this.contractAddress,
         page: this.page,
         image: this.image
       };
       let that = this;
       axios
-        .post("http://localhost:8000/upload-aepp-to-ipfs", JSON.stringify(aepp))
+        .post("http://localhost:8000/upload-aepp-to-ipfs", aepp, {
+          headers: { "Content-Type": "application/json" }
+        })
         .then(function(hash) {
           axios
             .post("http://localhost:8000/submit-ipfs-hash-to-contract", hash)
@@ -95,7 +102,7 @@ export default {
                 group: "notify",
                 text: "æpp successfully uploaded!"
               });
-              window.location = "/#/pending";
+              // window.location = "/#/pending";
             })
             .catch(function(error) {
               that.$notify({

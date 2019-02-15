@@ -55,7 +55,6 @@
 <script>
 import { AeButton } from "@aeternity/aepp-components";
 import isotope from "vueisotope";
-import ContractState from "../../util/contract_state";
 
 export default {
   components: { AeButton, isotope },
@@ -78,16 +77,9 @@ export default {
       }
     };
   },
-  created: function() {
-    ContractState.getApproved().then(approved => {
-      approved.value.forEach(function(a) {
-        ContractState.getFromIpfs(a.value);
-      });
-    });
-  },
   methods: {
     expand: function(event) {
-      // console.log(event);
+      console.log(event);
     }
   }
 };

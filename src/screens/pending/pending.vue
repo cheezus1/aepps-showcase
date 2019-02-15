@@ -1,7 +1,7 @@
 <template>
   <div class="grid" id="pending-aepps-container">
     <div
-      v-for="(pendingAepp, aeppIpfsHash, index) in pendingAepps"
+      v-for="(pendingAepp, ipfsHash, index) in pendingAepps"
       :key="pendingAepp.title"
       class="pending-aepp"
     >
@@ -10,14 +10,14 @@
           <ae-button
             face="icon"
             fill="secondary"
-            @click="vote(aeppIpfsHash, 'Approve')"
+            @click="vote(ipfsHash, 'Approve')"
           >
             <ae-icon name="check"></ae-icon>
           </ae-button>
           <ae-button
             face="icon"
             fill="secondary"
-            @click="vote(aeppIpfsHash, 'Reject')"
+            @click="vote(ipfsHash, 'Reject')"
           >
             <ae-icon name="close"></ae-icon>
           </ae-button>
@@ -26,7 +26,7 @@
         <div class="pending-aepp-description">
           <span class="pending-aepp-title">{{ pendingAepp.title }}</span>
           <span class="pending-aepp-short-description">{{
-            pendingAepp.short_description
+            pendingAepp.shortDescription
           }}</span>
         </div>
         <div class="finalize-btns">
@@ -122,8 +122,7 @@ export default {
     axios
       .get("http://localhost:8000/pending-aepps")
       .then(function(pendingAepps) {
-        this.pendingAepps = pendingAepps
-        console.log(pendingAepps);
+        that.pendingAepps = pendingAepps.data;
       })
       .catch(function(error) {
         that.$notify({
