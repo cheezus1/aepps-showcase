@@ -83,7 +83,16 @@ app.post('/submit-ipfs-hash-to-contract', (req, res) => {
 app.get('/pending-aepps', async (req, res) => {
   const staticCall = await client.contractCallStatic(contractAddress, 'sophia-address', 'get_pending', {args: '()'});
   const decoded = await client.contractDecodeData(pendingAeppsType, staticCall.result.returnValue);
-  res.send(decoded);
+  let hashes = [];
+  decoded.value.forEach(function(aepp) {
+    console.log(hashes)
+    let ipfsHash = aepp.key.value;
+    ipfs.get(ipfsHash, function(err, file){
+      if(err) res.status(500).json({error: "Failed to get from IPFS " + err});
+      hashes.push(JSON.stringify({hash: ipfsHash, aepp: file}));
+    });
+  });
+  res.send(hashes);
 });
 
 app.listen(8000, () => {

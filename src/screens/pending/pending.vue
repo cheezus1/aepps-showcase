@@ -118,6 +118,7 @@ export default {
     }
   },
   created: function() {
+    let that = this;
     axios
       .get("http://localhost:8000/pending-aepps")
       .then(function(pendingAepps) {
