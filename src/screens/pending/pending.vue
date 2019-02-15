@@ -95,6 +95,7 @@ export default {
   },
   methods: {
     vote: function(aeppIpfsHash, vote) {
+      console.log(aeppIpfsHash, vote);
       this.voteModalMessage =
         vote + " æpp " + this.pendingAepps[aeppIpfsHash].title + " ?";
       this.voteModalVisible = true;
@@ -113,7 +114,17 @@ export default {
       );
     },
     submitVote: function() {
-      // console.log(localStorage.getItem(this.voteSubmissionData.aeppIpfsHash));
+      axios.post(
+        "http://localhost:8000/vote",
+        {
+          aeppIpfsHash: this.voteSubmissionData.aeppIpfsHash,
+          commitmentHash: this.voteSubmissionData.commitmentHash,
+          voteAmount: parseInt(this.voteModalValue.amount)
+        },
+        {
+          headers: { "Content-Type": "application/json" }
+        }
+      );
       // call contract
     }
   },

@@ -18,7 +18,10 @@ const pendingAeppsType = `map(string,
   )`;
 const approvedAeppsType = "list(string)";
 
-const keypair = { secretKey: "a7a695f999b1872acb13d5b63a830a8ee060ba688a478a08c6e65dfad8a01cd70bb4ed7927f97b51e1bcb5e1340d12335b2a2b12c8bc5221d63c4bcb39d41e61", publicKey: "ak_6A2vcm1Sz6aqJezkLCssUXcyZTX7X8D5UwbuS2fRJr9KkYpRU" };
+const keypair = {
+  secretKey: "58bd39ded1e3907f0b9c1fbaa4456493519995d524d168e0b04e86400f4aa13937bcec56026494dcf9b19061559255d78deea3281ac649ca307ead34346fa621",
+   publicKey: "ak_RYkcTuYcyxQ6fWZsL2G3Kj3K5WCRUEXsi76bPUNkEsoHc52Wp"
+ };
 const contractAddress = "ct_DPnTr6cDWfhrscBHcz8ihidcMQoVPFwydKof7esjZSB4mK9z1";
 let client;
 
@@ -73,6 +76,8 @@ app.post('/submit-ipfs-hash-to-contract', (req, res) => {
       options: {amount: 1000000000000000000}
   }).then(data => {
     res.send(data);
+  }).catch(err => {
+    res.status(500).json({error: "Failed to submit hash to contract " + err});
   });
 });
 
@@ -88,6 +93,7 @@ app.get('/pending-aepps', async (req, res) => {
 
     // map pending aepps objects
     let pendingAeppFields = pendingAepp.val.value;
+    console.log(pendingAeppFields);
     pendingAepps[ipfsHash] = {
       owner: pendingAeppFields[0].value,
       submissionHeight: pendingAeppFields[2].value,
@@ -112,6 +118,21 @@ app.get('/pending-aepps', async (req, res) => {
     res.send(pendingAepps);
   });
 });
+
+app.post('/vote', (req, res) => {
+  console.log(req.body);
+  let aeppIpfsHash = req.body.aeppIpfsHash;
+  let commitmentHash = req.body.commitmentHash;
+  let voteAmount = req.body.voteAmount;
+  client.contractCall(contractAddress, 'sophia-address', contractAddress, 'vote', {
+      args: `("${aeppIpfsHash}", "${commitmentHash}")`,
+      options: {amount: voteAmount}
+  }).then(data => {
+    res.send(data);
+  }).catch(err => {
+    res.status(500).json({error: "Failed to vote for aepp " + err});
+  });
+})
 
 app.listen(8000, () => {
   console.log('Server listening on 8000.')
