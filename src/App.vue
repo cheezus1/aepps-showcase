@@ -19,7 +19,9 @@
             Governance
           </RouterLink>
         </div>
-        <div />
+        <div class="identity">
+          <ae-identity v-bind="identity" active collapsed />
+        </div>
       </div>
     </nav>
     <main>
@@ -29,11 +31,31 @@
 </template>
 
 <script>
+import { AeIdentity } from "@aeternity/aepp-components";
+import axios from "axios";
+
 export default {
   name: "App",
-  components: {},
+  components: { AeIdentity },
   data() {
-    return {};
+    return {
+      identity: {
+        address: undefined,
+        balance: undefined
+      }
+    };
+  },
+  created: function() {
+    let that = this;
+    axios
+      .get("http://localhost:8000/balance")
+      .then(account => {
+        let balance = account.data.balance.split(" ")[0];
+        that.identity = { balance: balance, address: account.data.pubkey };
+      })
+      .catch(function(error) {
+        console.log(error);
+      });
   }
 };
 </script>

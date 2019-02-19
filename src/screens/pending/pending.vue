@@ -1,5 +1,7 @@
 <template>
   <div class="grid" id="pending-aepps-container">
+    <notifications group="notify" position="bottom center" />
+    <div class="loader" v-if="loaderVisible"><ae-loader /></div>
     <div
       v-for="(pendingAepp, ipfsHash, index) in pendingAepps"
       :key="pendingAepp.title"
@@ -47,15 +49,16 @@
       :title="voteModalMessage"
     >
       <ae-amount-input
-        placeholder="0.00"
+        placeholder="0"
         v-model="voteModalValue"
-        :units="[{ symbol: 'AE', name: 'æternity' }]"
+        :units="[{ symbol: 'ætto', name: 'æternity' }]"
       />
       <ae-button
         face="round"
         fill="primary"
         id="submit-vote-btn"
         @click="submitVote()"
+        :disabled="voteSubmitBtnDisabled"
         >Submit</ae-button
       >
     </ae-modal>
@@ -64,6 +67,7 @@
 
 <script>
 import {
+  AeLoader,
   AeDivider,
   AeButton,
   AeIcon,
@@ -77,6 +81,7 @@ const crypto = require("crypto");
 
 export default {
   components: {
+    AeLoader,
     AeDivider,
     AeButton,
     AeIcon,
@@ -86,16 +91,17 @@ export default {
   },
   data() {
     return {
+      loaderVisible: true,
       pendingAepps: [],
       voteModalMessage: "",
       voteModalValue: { symbol: "AE", amount: undefined },
       voteModalVisible: false,
-      voteSubmissionData: {}
+      voteSubmissionData: {},
+      voteSubmitBtnDisabled: false
     };
   },
   methods: {
     vote: function(aeppIpfsHash, vote) {
-      console.log(aeppIpfsHash, vote);
       this.voteModalMessage =
         vote + " æpp " + this.pendingAepps[aeppIpfsHash].title + " ?";
       this.voteModalVisible = true;
@@ -114,18 +120,39 @@ export default {
       );
     },
     submitVote: function() {
-      axios.post(
-        "http://localhost:8000/vote",
-        {
-          aeppIpfsHash: this.voteSubmissionData.aeppIpfsHash,
-          commitmentHash: this.voteSubmissionData.commitmentHash,
-          voteAmount: parseInt(this.voteModalValue.amount)
-        },
-        {
-          headers: { "Content-Type": "application/json" }
-        }
-      );
-      // call contract
+      this.voteSubmitBtnDisabled = true;
+      let that = this;
+      axios
+        .post(
+          "http://localhost:8000/vote",
+          {
+            aeppIpfsHash: this.voteSubmissionData.aeppIpfsHash,
+            commitmentHash: this.voteSubmissionData.commitmentHash,
+            voteAmount: parseInt(this.voteModalValue.amount)
+          },
+          {
+            headers: { "Content-Type": "application/json" }
+          }
+        )
+        .then(function() {
+          that.resetModalData();
+          that.$notify({
+            group: "notify",
+            text: "successfully voted for æpp"
+          });
+        })
+        .catch(function(error) {
+          that.resetModalData();
+          that.$notify({
+            group: "notify",
+            text: "failed to submit vote for æpp: " + error
+          });
+        });
+    },
+    resetModalData: function() {
+      this.voteSubmitBtnDisabled = false;
+      this.voteModalVisible = false;
+      this.voteModalValue.amount = undefined;
     }
   },
   created: function() {
@@ -134,12 +161,14 @@ export default {
       .get("http://localhost:8000/pending-aepps")
       .then(function(pendingAepps) {
         that.pendingAepps = pendingAepps.data;
+        that.loaderVisible = false;
       })
       .catch(function(error) {
         that.$notify({
           group: "notify",
           text: "failed to load pending` æpps: " + error
         });
+        that.loaderVisible = false;
       });
   }
 };
