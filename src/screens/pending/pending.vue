@@ -38,6 +38,9 @@
           <!-- <ae-button fill="primary" face="round">Finalize voting</ae-button> -->
         </div>
       </div>
+      <div class="vote-data">
+        Total votes: {{pendingAepp.voteRewardPool}}
+      </div>
       <ae-divider
         v-if="index < Object.keys(pendingAepps).length - 1"
         type="exciting"
@@ -73,7 +76,8 @@ import {
   AeIcon,
   AeModal,
   AeAmountInput,
-  AeAppIcon
+  AeAppIcon,
+  AeToolbar
 } from "@aeternity/aepp-components";
 import { sha3_256 } from "js-sha3";
 import axios from "axios";
@@ -87,7 +91,8 @@ export default {
     AeIcon,
     AeModal,
     AeAmountInput,
-    AeAppIcon
+    AeAppIcon,
+    AeToolbar
   },
   data() {
     return {
