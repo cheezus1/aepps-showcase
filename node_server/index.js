@@ -1,4 +1,5 @@
 const Ae = require('@aeternity/aepp-sdk').Universal;
+const Crypto = require('@aeternity/aepp-sdk').Crypto;
 const express = require('express');
 const app = express();
 const cors = require('cors');
@@ -97,9 +98,22 @@ app.get('/pending-aepps', async (req, res) => {
     let ipfsHash = pendingAepp.key.value;
     ipfsPromises.push(ipfs.get(ipfsHash));
 
-    // map pending aepps objects
+    let voters = [];
+    pendingAepp.val.value[4].value.forEach(function(voter) {
+      let voter_address = voter.key.value;
+      let vote_amount = voter.val.value[1].value;
+      voters.push({voter_address: Crypto.addressFromDecimal(voter_address), amount: vote_amount});
+    });
+
+    let submittedVoters = [];
+    pendingAepp.val.value[5].value.forEach(function(voter) {
+     submittedVoters = voter.val.value[0].value
+    })
+
     let pendingAeppFields = pendingAepp.val.value;
     pendingAepps[ipfsHash] = {
+      voters: voters,
+      submittedVoters: submittedVoters,
       owner: pendingAeppFields[0].value,
       submissionHeight: pendingAeppFields[2].value,
       voteRewardPool: pendingAeppFields[3].value

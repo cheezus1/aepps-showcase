@@ -97,7 +97,9 @@ export default {
       voteModalValue: { symbol: "AE", amount: undefined },
       voteModalVisible: false,
       voteSubmissionData: {},
-      voteSubmitBtnDisabled: false
+      voteSubmitBtnDisabled: false,
+      voteOption: "",
+      voteIpfsHash: ""
     };
   },
   methods: {
@@ -105,21 +107,21 @@ export default {
       this.voteModalMessage =
         vote + " æpp " + this.pendingAepps[aeppIpfsHash].title + " ?";
       this.voteModalVisible = true;
-
+      this.voteOption = vote;
+    },
+    submitVote: function() {
       let salt = crypto.randomBytes(32).toString("hex");
-      let commitmentHash = sha3_256(vote + salt);
+      let commitmentHash = sha3_256(this.voteOption + salt);
       this.voteSubmissionData = {
-        aeppIpfsHash: aeppIpfsHash,
+        aeppIpfsHash: this.voteIpfsHash,
         commitmentHash: commitmentHash,
-        vote: vote,
+        vote: this.voteOption,
         salt: salt
       };
       localStorage.setItem(
-        aeppIpfsHash,
+        this.voteIpfsHash,
         JSON.stringify(this.voteSubmissionData)
       );
-    },
-    submitVote: function() {
       this.voteSubmitBtnDisabled = true;
       let that = this;
       axios
