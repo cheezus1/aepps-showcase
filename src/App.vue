@@ -50,7 +50,7 @@ export default {
     axios
       .get("http://localhost:8000/balance")
       .then(account => {
-        let balance = account.data.balance.split(" ")[0];
+        let balance = parseFloat(account.data.balance.split(" ")[0]);
         that.identity = { balance: balance, address: account.data.pubkey };
       })
       .catch(function(error) {

@@ -102,7 +102,7 @@ export default {
                 group: "notify",
                 text: "æpp successfully uploaded!"
               });
-              // window.location = "/#/pending";
+              window.location = "/#/pending";
             })
             .catch(function(error) {
               that.$notify({

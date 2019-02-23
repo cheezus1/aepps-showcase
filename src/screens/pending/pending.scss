@@ -90,3 +90,28 @@
 .confirm-vote-btn {
   background: #311b58 !important;
 }
+
+.vuejs-countdown {
+  text-align: center;
+}
+
+.vuejs-countdown .digit {
+  font-size: 25px !important;
+  font-weight: normal !important;
+}
+
+.vuejs-countdown li::after {
+  font-size: 25px !important;
+}
+
+.vuejs-countdown .text {
+  color: #76818C !important;
+}
+
+.timer-status-text {
+  display: block;
+  text-align: center;
+  font-size: 15px;
+  text-transform: uppercase;
+  margin-top: 5px;
+}

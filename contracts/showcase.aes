@@ -52,8 +52,8 @@ contract Showcase =
     put(state{ pending[aepp_ipfs_hash] = pending_aepp_data })
 
   public stateful function vote(aepp_ipfs_hash : aepp_ipfs_hash, commitment_hash : commitment_hash) =
-    require(Call.caller != state.pending[aepp_ipfs_hash].owner, "Owner can't vote for himself")
     require(Map.member(aepp_ipfs_hash, state.pending), "aepp not up for voting")
+    require(Call.caller != state.pending[aepp_ipfs_hash].owner, "Owner can't vote for himself")
     require(!Map.member(Call.caller, state.pending[aepp_ipfs_hash].voters), "Address already voted")
 
     let updated_pending_aepp =
@@ -74,17 +74,24 @@ contract Showcase =
 
     require(approval_time_over && !vote_submit_time_over, "aepp not up for commitment submission")
     require(Map.member(Call.caller, state.pending[aepp_ipfs_hash].voters), "Address not a voter for this aepp")
-    require(vote == "yes" || vote == "no", "Invalid vote")
+    require(!has_submitted_vote(Call.caller, state.pending[aepp_ipfs_hash].submitted_votes[vote].voter_addresses),
+      "Address already submitted a vote")
+    require(vote == "approve" || vote == "reject", "Invalid vote")
 
     let commitment_hash_check : int = String.sha3(String.concat(vote, salt))
     require(commitment_hash_check == state.pending[aepp_ipfs_hash].voters[Call.caller].commitment_hash, "Commitment hash mismatch")
 
-    let updated_pending_aepp =
-      state.pending[aepp_ipfs_hash]{submitted_votes[vote] @ v = v{total_votes @ tv = tv + state.pending[aepp_ipfs_hash].voters[Call.caller].amount} }
+    let updated_voter_addresses : list(address) = Call.caller :: state.pending[aepp_ipfs_hash].submitted_votes[vote].voter_addresses
+    let updated_total_votes : int =
+      state.pending[aepp_ipfs_hash].submitted_votes[vote].total_votes + state.pending[aepp_ipfs_hash].voters[Call.caller].amount
+    let updated_vote_group : vote_group =
+      state.pending[aepp_ipfs_hash].submitted_votes[vote]{ voter_addresses = updated_voter_addresses, total_votes = updated_total_votes }
+    let updated_submitted_votes : map(string, vote_group) = state.pending[aepp_ipfs_hash].submitted_votes{ [vote] = updated_vote_group }
+    let updated_pending_aepp = state.pending[aepp_ipfs_hash]{ submitted_votes = updated_submitted_votes }
 
     put(state{ pending[aepp_ipfs_hash] = updated_pending_aepp })
 
-  public stateful function finalize_aepp_vote(aepp_ipfs_hash : aepp_ipfs_hash) =
+  public stateful function finalize_voting(aepp_ipfs_hash : aepp_ipfs_hash) =
     let pending_aepp_data : pending_aepp_data = state.pending[aepp_ipfs_hash]
 
     require(pending_aepp_data.submission_height + state.approval_time_frame * 2 >=
@@ -94,19 +101,19 @@ contract Showcase =
     put(state{pending = new_pending_data})
 
     let winning_group : string =
-      if(pending_aepp_data.submitted_votes["yes"].total_votes >= pending_aepp_data.submitted_votes["no"].total_votes)
+      if(pending_aepp_data.submitted_votes["approve"].total_votes >= pending_aepp_data.submitted_votes["reject"].total_votes)
         Chain.spend(pending_aepp_data.owner, pending_aepp_data.deposit)
         put(state{ approved @ a = aepp_ipfs_hash :: a })
 
-        "yes"
+        "approve"
       else
-        "no"
+        "reject"
 
     let total_reward_pool : int =
       switch(winning_group)
-        "yes" =>
+        "approve" =>
           pending_aepp_data.vote_reward_pool
-        "no"  =>
+        "reject"  =>
           pending_aepp_data.vote_reward_pool + pending_aepp_data.deposit
 
     let reward_pool : int = percentage(total_reward_pool, state.vote_pool_percentage)
@@ -128,6 +135,16 @@ contract Showcase =
       [] =>
         0
 
+  private function has_submitted_vote(voter : address, voter_addresses : list(address)) : bool =
+    switch(voter_addresses)
+      voter_address :: rest =>
+        if(voter_address == voter)
+          true
+        else
+          has_submitted_vote(voter, rest)
+      [] =>
+        false
+
   private function new_pending_aepp_data() =
     { owner = Call.caller,
       deposit = Call.value,
@@ -135,8 +152,8 @@ contract Showcase =
       vote_reward_pool = 0,
       voters = {},
       submitted_votes =
-        { ["yes"] = {voter_addresses = [], total_votes = 0},
-          ["no"] = {voter_addresses = [], total_votes = 0} } }
+        { ["approve"] = {voter_addresses = [], total_votes = 0},
+          ["reject"] = {voter_addresses = [], total_votes = 0} } }
 
   private function percentage(value : int, percentage : int) : int =
     (value * percentage) / 100

@@ -19,11 +19,14 @@ const pendingAeppsType = `map(string,
   )`;
 const approvedAeppsType = "list(string)";
 
+// default
 const keypair = {
   secretKey: "a7a695f999b1872acb13d5b63a830a8ee060ba688a478a08c6e65dfad8a01cd70bb4ed7927f97b51e1bcb5e1340d12335b2a2b12c8bc5221d63c4bcb39d41e61",
    publicKey: "ak_6A2vcm1Sz6aqJezkLCssUXcyZTX7X8D5UwbuS2fRJr9KkYpRU"
  };
-const contractAddress = "ct_DPnTr6cDWfhrscBHcz8ihidcMQoVPFwydKof7esjZSB4mK9z1";
+
+const contractAddress = "ct_VLm8ghSbKmezRcoqRGe4kS9xMEX81P9HXRCFGMHZuJar8mnRL";
+const approvalTimeFrame = 1; // 480
 let client;
 
 const init = async () => {
@@ -91,10 +94,13 @@ app.post('/submit-ipfs-hash-to-contract', (req, res) => {
 app.get('/pending-aepps', async (req, res) => {
   const staticCall = await client.contractCallStatic(contractAddress, 'sophia-address', 'get_pending', {args: '()'});
   const decoded = await client.contractDecodeData(pendingAeppsType, staticCall.result.returnValue);
+  let currentBlock = await client.topBlock();
 
   let ipfsPromises = [];
   let pendingAepps = {};
-  decoded.value.forEach(function(pendingAepp) {
+  let i = 0;
+  for(i = 0; i < decoded.value.length; i++) {
+    let pendingAepp = decoded.value[i];
     let ipfsHash = pendingAepp.key.value;
     ipfsPromises.push(ipfs.get(ipfsHash));
 
@@ -105,20 +111,48 @@ app.get('/pending-aepps', async (req, res) => {
       voters.push({voter_address: Crypto.addressFromDecimal(voter_address), amount: vote_amount});
     });
 
-    let submittedVoters = [];
-    pendingAepp.val.value[5].value.forEach(function(voter) {
-     submittedVoters = voter.val.value[0].value
-    })
+    let submittedVotes = {};
+    pendingAepp.val.value[5].value.forEach(function(voteGroup) {
+      submittedVotes[voteGroup.key.value] = {};
+      submittedVotes[voteGroup.key.value].total_votes = voteGroup.val.value[1].value;
+      submittedVotes[voteGroup.key.value].voter_addresses = [];
+      voteGroup.val.value[0].value.forEach(function(voter) {
+        submittedVotes[voteGroup.key.value].voter_addresses.push(Crypto.addressFromDecimal(voter.value));
+      })
+    });
+
+    let submissionKeyBlock =
+      await client.api.getKeyBlockByHeight(pendingAepp.val.value[2].value);
+    let timeDifference = currentBlock.time - submissionKeyBlock.time;
+    let blocksElapsed = currentBlock.height - submissionKeyBlock.height;
+    let averageBlockTime = timeDifference / blocksElapsed;
+    let endTimestamp;
+    let currentPeriod;
+    if(blocksElapsed <= approvalTimeFrame) {
+      endTimestamp = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame);
+      currentPeriod = 0;
+    } else if(blocksElapsed <= approvalTimeFrame * 2) {
+      endTimestamp = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame * 2)
+      currentPeriod = 1;
+    } else {
+      endTimestamp = undefined;
+      currentPeriod = 2;
+    }
+
+    let voteEndTime = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame);
+    let confirmVoteEndTime = voteEndTime + (averageBlockTime * approvalTimeFrame);
 
     let pendingAeppFields = pendingAepp.val.value;
     pendingAepps[ipfsHash] = {
       voters: voters,
-      submittedVoters: submittedVoters,
-      owner: pendingAeppFields[0].value,
+      submittedVotes: submittedVotes,
+      owner: Crypto.addressFromDecimal(pendingAeppFields[0].value),
       submissionHeight: pendingAeppFields[2].value,
-      voteRewardPool: pendingAeppFields[3].value
+      voteRewardPool: pendingAeppFields[3].value,
+      currentHeight: currentBlock.height,
+      endTime: { timestamp: endTimestamp, currentPeriod: currentPeriod }
     }
-  });
+  }
 
   Promise.all(ipfsPromises).then(function(aepps) {
     aepps.forEach(function(aepp) {
@@ -143,14 +177,41 @@ app.post('/vote', (req, res) => {
   let commitmentHash = req.body.commitmentHash;
   let voteAmount = req.body.voteAmount;
   client.contractCall(contractAddress, 'sophia-address', contractAddress, 'vote', {
-      args: `("${aeppIpfsHash}", "${commitmentHash}")`,
-      options: {amount: voteAmount}
+      args: `("${aeppIpfsHash}", 0x${commitmentHash})`,
+      options: { amount: voteAmount }
   }).then(data => {
     res.send(data);
   }).catch(err => {
     res.status(500).json({error: "Failed to vote for aepp " + err});
   });
-})
+});
+
+app.post('/submit-commitment', (req, res) => {
+  let aeppIpfsHash = req.body.aeppIpfsHash;
+  let vote = req.body.vote;
+  let salt = req.body.salt;
+  client.contractCall(contractAddress, 'sophia-address', contractAddress, 'submit_commitment', {
+      args: `("${aeppIpfsHash}", "${vote.toLowerCase()}", "${salt}")`,
+      options: {}
+  }).then(data => {
+    res.send(data);
+  }).catch(err => {
+    res.status(500).json({error: "Failed to confirm vote " + err});
+  });
+});
+
+app.post('/finalize-voting', (req, res) => {
+  let aeppIpfsHash = req.body.aeppIpfsHash;
+  // client.contractCall(contractAddress, 'sophia-address', contractAddress, 'finalize_voting', {
+  client.contractCall(contractAddress, 'sophia-address', contractAddress, 'finalize_aepp_vote', {
+      args: `("${aeppIpfsHash}")`,
+      options: {}
+  }).then(data => {
+    res.send(data);
+  }).catch(err => {
+    res.status(500).json({error: "Failed to finalize voting " + err});
+  });
+});
 
 app.listen(8000, () => {
   console.log('Server listening on 8000.')

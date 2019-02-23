@@ -9,20 +9,27 @@
     >
       <div class="pending-aepp-items">
         <div class="buttons">
-          <ae-button
-            face="icon"
-            fill="secondary"
-            @click="vote(ipfsHash, 'Approve')"
+          <div
+            v-if="
+              pendingAepp.endTime.currentPeriod == 0 &&
+                !hasVotedForPendingAepp(ipfsHash)
+            "
           >
-            <ae-icon name="check"></ae-icon>
-          </ae-button>
-          <ae-button
-            face="icon"
-            fill="secondary"
-            @click="vote(ipfsHash, 'Reject')"
-          >
-            <ae-icon name="close"></ae-icon>
-          </ae-button>
+            <ae-button
+              face="icon"
+              fill="secondary"
+              @click="vote(ipfsHash, 'Approve')"
+            >
+              <ae-icon name="check"></ae-icon>
+            </ae-button>
+            <ae-button
+              face="icon"
+              fill="secondary"
+              @click="vote(ipfsHash, 'Reject')"
+            >
+              <ae-icon name="close"></ae-icon>
+            </ae-button>
+          </div>
         </div>
         <ae-app-icon :src="pendingAepp.image" />
         <div class="pending-aepp-description">
@@ -32,14 +39,50 @@
           }}</span>
         </div>
         <div class="finalize-btns">
-          <ae-button fill="primary" face="round" class="confirm-vote-btn"
-            >Confirm vote</ae-button
+          <div
+            v-if="
+              hasVotedForPendingAepp(ipfsHash) &&
+                pendingAepp.endTime.currentPeriod == 0
+            "
           >
-          <!-- <ae-button fill="primary" face="round">Finalize voting</ae-button> -->
+            <Countdown
+              :end="formatTimestamp(pendingAepp.endTime.timestamp)"
+            ></Countdown>
+            <span class="timer-status-text">until vote confirmation</span>
+          </div>
+          <div v-else-if="pendingAepp.endTime.currentPeriod == 1">
+            <ae-button
+              v-if="!hasConfirmedVote(ipfsHash)"
+              fill="primary"
+              face="round"
+              class="confirm-vote-btn"
+              @click="confirmVote(ipfsHash)"
+              >Confirm vote</ae-button
+            >
+            <div v-else>
+              <Countdown
+                :end="formatTimestamp(pendingAepp.endTime.timestamp)"
+              ></Countdown>
+              <span class="timer-status-text">until vote finalization</span>
+            </div>
+          </div>
+          <ae-button
+            v-else
+            @click="finalizeVoting()"
+            fill="primary"
+            face="round"
+            >Finalize voting</ae-button
+          >
         </div>
       </div>
       <div class="vote-data">
-        Total votes: {{pendingAepp.voteRewardPool}}
+        <span v-if="hasVotedForPendingAepp(ipfsHash)" style="font-weight: bold"
+          >You voted with: {{ getVoteAmountForPendingAepp(ipfsHash) }}
+          <span style="text-transform: lowercase">ættos</span></span
+        >
+        <span v-if="hasVotedForPendingAepp(ipfsHash)"> | </span>
+        Total votes: {{ pendingAepp.voteRewardPool }}
+        <span style="text-transform: lowercase">ættos</span>
       </div>
       <ae-divider
         v-if="index < Object.keys(pendingAepps).length - 1"
@@ -76,12 +119,12 @@ import {
   AeIcon,
   AeModal,
   AeAmountInput,
-  AeAppIcon,
-  AeToolbar
+  AeAppIcon
 } from "@aeternity/aepp-components";
-import { sha3_256 } from "js-sha3";
+import Countdown from "vuejs-countdown";
 import axios from "axios";
-const crypto = require("crypto");
+import * as Crypto from "@aeternity/aepp-sdk/es/utils/crypto";
+import { Keccak } from "sha3";
 
 export default {
   components: {
@@ -92,7 +135,7 @@ export default {
     AeModal,
     AeAmountInput,
     AeAppIcon,
-    AeToolbar
+    Countdown
   },
   data() {
     return {
@@ -112,11 +155,14 @@ export default {
       this.voteModalMessage =
         vote + " æpp " + this.pendingAepps[aeppIpfsHash].title + " ?";
       this.voteModalVisible = true;
-      this.voteOption = vote;
+      this.voteOption = vote.toLowerCase();
+      this.voteIpfsHash = aeppIpfsHash;
     },
     submitVote: function() {
-      let salt = crypto.randomBytes(32).toString("hex");
-      let commitmentHash = sha3_256(this.voteOption + salt);
+      let salt = Crypto.salt();
+      let hash = new Keccak(256);
+      hash.update(this.voteOption + salt);
+      let commitmentHash = hash.digest("hex");
       this.voteSubmissionData = {
         aeppIpfsHash: this.voteIpfsHash,
         commitmentHash: commitmentHash,
@@ -160,6 +206,123 @@ export default {
       this.voteSubmitBtnDisabled = false;
       this.voteModalVisible = false;
       this.voteModalValue.amount = undefined;
+    },
+    hasVotedForPendingAepp: function(ipfsHash) {
+      const address = this.$parent._data.identity.address;
+      let i = 0;
+      for (i = 0; i < this.pendingAepps[ipfsHash].voters.length; i++) {
+        if (this.pendingAepps[ipfsHash].voters[i].voter_address == address)
+          return true;
+      }
+
+      return false;
+    },
+    getVoteAmountForPendingAepp: function(ipfsHash) {
+      const address = this.$parent._data.identity.address;
+      let i = 0;
+      for (i = 0; i < this.pendingAepps[ipfsHash].voters.length; i++) {
+        if (this.pendingAepps[ipfsHash].voters[i].voter_address == address)
+          return this.pendingAepps[ipfsHash].voters[i].amount;
+      }
+
+      return 0;
+    },
+    hasConfirmedVote: function(ipfsHash) {
+      const address = this.$parent._data.identity.address;
+      const hasApproved = this.pendingAepps[ipfsHash].submittedVotes[
+        "approve"
+      ].voter_addresses.includes(address);
+      const hasRejected = this.pendingAepps[ipfsHash].submittedVotes[
+        "reject"
+      ].voter_addresses.includes(address);
+
+      return hasApproved || hasRejected;
+    },
+    confirmVote: function(ipfsHash) {
+      const commitmentData = JSON.parse(localStorage.getItem(ipfsHash));
+      let that = this;
+      axios
+        .post(
+          "http://localhost:8000/submit-commitment",
+          {
+            aeppIpfsHash: ipfsHash,
+            vote: commitmentData.vote,
+            salt: commitmentData.salt
+          },
+          {
+            headers: { "Content-Type": "application/json" }
+          }
+        )
+        .then(function() {
+          that.resetModalData();
+          that.$notify({
+            group: "notify",
+            text: "successfully confirmed vote"
+          });
+        })
+        .catch(function(error) {
+          that.resetModalData();
+          that.$notify({
+            group: "notify",
+            text: "failed to confirm vote: " + error
+          });
+        });
+    },
+    formatTimestamp(timestamp) {
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ];
+      let date = new Date(timestamp);
+
+      return (
+        monthNames[date.getMonth()] +
+        " " +
+        date.getDate() +
+        ", " +
+        date.getFullYear() +
+        " " +
+        date.getHours() +
+        ":" +
+        date.getMinutes() +
+        ":" +
+        date.getSeconds()
+      );
+    },
+    finalizeVoting(ipfsHash) {
+      let that = this;
+      axios
+        .post(
+          "http://localhost:8000/finalize-voting",
+          {
+            aeppIpfsHash: ipfsHash
+          },
+          {
+            headers: { "Content-Type": "application/json" }
+          }
+        )
+        .then(function() {
+          that.$notify({
+            group: "notify",
+            text: "successfully finalized voting"
+          });
+        })
+        .catch(function(error) {
+          that.$notify({
+            group: "notify",
+            text: "failed to finalize voting: " + error
+          });
+        });
     }
   },
   created: function() {
