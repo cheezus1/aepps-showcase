@@ -72,7 +72,7 @@
           </div>
           <ae-button
             v-else-if="pendingAepp.endTime.currentPeriod == 2"
-            @click="finalizeVoting()"
+            @click="finalizeVoting(ipfsHash)"
             fill="primary"
             face="round"
             >Finalize voting</ae-button
@@ -289,20 +289,6 @@ export default {
         "December"
       ];
       let date = new Date(timestamp);
-
-      console.log(
-        monthNames[date.getMonth()] +
-          " " +
-          date.getDate() +
-          ", " +
-          date.getFullYear() +
-          " " +
-          date.getHours() +
-          ":" +
-          date.getMinutes() +
-          ":" +
-          date.getSeconds()
-      );
 
       return (
         monthNames[date.getMonth()] +
