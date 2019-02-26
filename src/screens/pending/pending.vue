@@ -46,8 +46,10 @@
             "
           >
             <Countdown
+              v-if="currentTimestamp < pendingAepp.endTime.timestamp"
               :end="formatTimestamp(pendingAepp.endTime.timestamp)"
             ></Countdown>
+            <span v-else class="timer-status-text">A few moments</span>
             <span class="timer-status-text">until vote confirmation</span>
           </div>
           <div v-else-if="pendingAepp.endTime.currentPeriod == 1">
@@ -61,13 +63,15 @@
             >
             <div v-else>
               <Countdown
+                v-if="currentTimestamp < pendingAepp.endTime.timestamp"
                 :end="formatTimestamp(pendingAepp.endTime.timestamp)"
               ></Countdown>
+              <span v-else class="timer-status-text">A few moments</span>
               <span class="timer-status-text">until vote finalization</span>
             </div>
           </div>
           <ae-button
-            v-else
+            v-else-if="pendingAepp.endTime.currentPeriod == 2"
             @click="finalizeVoting()"
             fill="primary"
             face="round"
@@ -147,7 +151,8 @@ export default {
       voteSubmissionData: {},
       voteSubmitBtnDisabled: false,
       voteOption: "",
-      voteIpfsHash: ""
+      voteIpfsHash: "",
+      currentTimestamp: +new Date()
     };
   },
   methods: {
@@ -284,6 +289,20 @@ export default {
         "December"
       ];
       let date = new Date(timestamp);
+
+      console.log(
+        monthNames[date.getMonth()] +
+          " " +
+          date.getDate() +
+          ", " +
+          date.getFullYear() +
+          " " +
+          date.getHours() +
+          ":" +
+          date.getMinutes() +
+          ":" +
+          date.getSeconds()
+      );
 
       return (
         monthNames[date.getMonth()] +

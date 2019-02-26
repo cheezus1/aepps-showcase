@@ -25,7 +25,7 @@ const keypair = {
    publicKey: "ak_6A2vcm1Sz6aqJezkLCssUXcyZTX7X8D5UwbuS2fRJr9KkYpRU"
  };
 
-const contractAddress = "ct_VLm8ghSbKmezRcoqRGe4kS9xMEX81P9HXRCFGMHZuJar8mnRL";
+const contractAddress = "ct_K543R637FM4uNQPDUMbdeANJJ8SZARNPNN3PQp4bpyht8Pb3k";
 const approvalTimeFrame = 1; // 480
 let client;
 
@@ -126,12 +126,25 @@ app.get('/pending-aepps', async (req, res) => {
     let timeDifference = currentBlock.time - submissionKeyBlock.time;
     let blocksElapsed = currentBlock.height - submissionKeyBlock.height;
     let averageBlockTime = timeDifference / blocksElapsed;
+
+    if(blocksElapsed == 0) {
+      averageBlockTime = 180000;
+    }
+    console.log("dasdasd:")
+    console.log("submission height " + pendingAepp.val.value[2].value)
+    console.log(submissionKeyBlock)
+    console.log(currentBlock.height)
+    console.log(timeDifference)
+  console.log(blocksElapsed)
+    console.log(averageBlockTime)
+    console.log("------------------")
+
     let endTimestamp;
     let currentPeriod;
-    if(blocksElapsed <= approvalTimeFrame) {
+    if(blocksElapsed < approvalTimeFrame) {
       endTimestamp = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame);
       currentPeriod = 0;
-    } else if(blocksElapsed <= approvalTimeFrame * 2) {
+    } else if(blocksElapsed < approvalTimeFrame * 2) {
       endTimestamp = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame * 2)
       currentPeriod = 1;
     } else {
@@ -139,8 +152,9 @@ app.get('/pending-aepps', async (req, res) => {
       currentPeriod = 2;
     }
 
-    let voteEndTime = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame);
-    let confirmVoteEndTime = voteEndTime + (averageBlockTime * approvalTimeFrame);
+    console.log(submissionKeyBlock.time)
+    console.log(endTimestamp)
+    console.log(currentPeriod)
 
     let pendingAeppFields = pendingAepp.val.value;
     pendingAepps[ipfsHash] = {
@@ -202,8 +216,7 @@ app.post('/submit-commitment', (req, res) => {
 
 app.post('/finalize-voting', (req, res) => {
   let aeppIpfsHash = req.body.aeppIpfsHash;
-  // client.contractCall(contractAddress, 'sophia-address', contractAddress, 'finalize_voting', {
-  client.contractCall(contractAddress, 'sophia-address', contractAddress, 'finalize_aepp_vote', {
+  client.contractCall(contractAddress, 'sophia-address', contractAddress, 'finalize_voting', {
       args: `("${aeppIpfsHash}")`,
       options: {}
   }).then(data => {
