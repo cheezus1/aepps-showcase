@@ -136,7 +136,7 @@ app.get('/pending-aepps', async (req, res) => {
     if(blocksElapsed < approvalTimeFrame) {
       endTimestamp = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame);
       currentPeriod = 0;
-    } else if(blocksElapsed <= approvalTimeFrame * 2) {
+    } else if(blocksElapsed < approvalTimeFrame * 2) {
       endTimestamp = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame * 2)
       currentPeriod = 1;
     } else {
