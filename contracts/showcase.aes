@@ -67,10 +67,10 @@ contract Showcase =
     require(Map.member(aepp_ipfs_hash, state.pending), "aepp not up for voting")
 
     let approval_time_over : bool =
-      state.pending[aepp_ipfs_hash].submission_height + state.approval_time_frame >= Chain.block_height
+      Chain.block_height > state.pending[aepp_ipfs_hash].submission_height + state.approval_time_frame
 
     let vote_submit_time_over : bool =
-      Chain.block_height < state.pending[aepp_ipfs_hash].submission_height + 2 * state.approval_time_frame
+      Chain.block_height =< state.pending[aepp_ipfs_hash].submission_height + 2 * state.approval_time_frame
 
     require(approval_time_over && !vote_submit_time_over, "aepp not up for commitment submission")
     require(Map.member(Call.caller, state.pending[aepp_ipfs_hash].voters), "Address not a voter for this aepp")
@@ -128,7 +128,8 @@ contract Showcase =
 
     switch (voter_addresses)
       voter_address :: rest =>
-        let voter_reward : int = (voters[voter_address].amount * 100) / reward_pool
+        let voter_reward_percentage : int = (voters[voter_address].amount * 100) / reward_pool
+        let voter_reward = percentage(reward_pool, voter_reward_percentage)
         Chain.spend(voter_address, voter_reward)
 
         grant_vote_rewards(rest, voters, reward_pool)

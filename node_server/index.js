@@ -25,7 +25,7 @@ const keypair = {
    publicKey: "ak_6A2vcm1Sz6aqJezkLCssUXcyZTX7X8D5UwbuS2fRJr9KkYpRU"
  };
 
-const contractAddress = "ct_K543R637FM4uNQPDUMbdeANJJ8SZARNPNN3PQp4bpyht8Pb3k";
+const contractAddress = "ct_QK7kHUkYgzkvXM7aJt3BZJMdtpvUx846xv8XuwVPXiWPASaiQ";
 const approvalTimeFrame = 1; // 480
 let client;
 
@@ -144,7 +144,7 @@ app.get('/pending-aepps', async (req, res) => {
     if(blocksElapsed < approvalTimeFrame) {
       endTimestamp = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame);
       currentPeriod = 0;
-    } else if(blocksElapsed < approvalTimeFrame * 2) {
+    } else if(blocksElapsed <= approvalTimeFrame * 2) {
       endTimestamp = submissionKeyBlock.time + (averageBlockTime * approvalTimeFrame * 2)
       currentPeriod = 1;
     } else {
