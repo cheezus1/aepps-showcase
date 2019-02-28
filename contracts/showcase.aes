@@ -94,8 +94,7 @@ contract Showcase =
   public stateful function finalize_voting(aepp_ipfs_hash : aepp_ipfs_hash) =
     let pending_aepp_data : pending_aepp_data = state.pending[aepp_ipfs_hash]
 
-    require(pending_aepp_data.submission_height + state.approval_time_frame * 2 <
-      Chain.block_height, "aepp still up for voting")
+    require(Chain.block_height >= pending_aepp_data.submission_height + state.approval_time_frame * 2, "aepp still up for voting")
 
     let new_pending_data : map(aepp_ipfs_hash, pending_aepp_data) = Map.delete(aepp_ipfs_hash, state.pending)
     put(state{pending = new_pending_data})

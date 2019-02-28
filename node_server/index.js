@@ -25,7 +25,7 @@ const keypair = {
    publicKey: "ak_6A2vcm1Sz6aqJezkLCssUXcyZTX7X8D5UwbuS2fRJr9KkYpRU"
  };
 
-const contractAddress = "ct_2KSXYq7asoRj6biZFzskrwvBR7F1bwtvCqMJs9VtTBWmjELToc";
+const contractAddress = "ct_2UpKZYoSDhGJ2Yu4BgpPuzDK9FYoZzCrntJymgNrJgLzWqdid7";
 const approvalTimeFrame = 1; // 480
 let client;
 
@@ -206,7 +206,7 @@ app.post('/finalize-voting', (req, res) => {
   let aeppIpfsHash = req.body.aeppIpfsHash;
   client.contractCall(contractAddress, 'sophia-address', contractAddress, 'finalize_voting', {
       args: `("${aeppIpfsHash}")`,
-      options: {}
+      options: { gas: 1000000 }
   }).then(data => {
     res.send(data);
   }).catch(err => {
